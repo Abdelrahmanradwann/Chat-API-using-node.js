@@ -2,6 +2,7 @@ const User = require("../models/user")
 const asyncHandler = require("express-async-handler")
 
 
+// need to be updated bec I should also return the gps of this user
 const allUsers = asyncHandler(async (req, res) => {
     const curUserId = req.current.id;
     const user = await User.findOne({ _id: curUserId })

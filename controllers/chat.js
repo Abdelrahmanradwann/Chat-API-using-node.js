@@ -4,99 +4,88 @@ const User = require("../models/user")
 const Message = require("../models/message")
 
 //One to One chat
-const privateChat = asyncHandler(async (req, res) => {
-    const curUserId = req.current.id
-    const recieverId = req.params.id
-    var chat = await Chat.findOne({
-        isGroupChat: false,
-        users:
-        {
-            $all: 
-            [curUserId,recieverId]      
-        }
-    })
 
-    if (chat) {
-        console.log("In chat")
-        const chatId = chat._id;
+const getChat = async (req, res) => {
+    console.log("in get chat")
+    const chatId = req.params.chatId;
+    try {
+        const chat = await Chat.findOne(
+            { _id: chatId }
+        )
+        if (chat.length == 0) {
+            return res.status(400).send("Chat not found");
+        }
+
         const messages = await Message.find({ chat: chatId }).sort({ createdAt: -1 });
-        // res.status(200).send(messages);
-         res.status(200).send({chatInfo: chat, history:messages })
+        res.status(200).send({chatInfo: chat, history:messages })
     }
-    else {
-        const recieveUser = await User.findOne({_id: recieverId})
-        var chatObject = {
-            chatName: recieveUser.username,
-            isGroupChat: false,
-            chatAdmin: [curUserId, recieverId],
-            users:[curUserId,recieverId]           
-        }
-        const addChat = await Chat.create(chatObject)
-        res.status(200).send({chatInfo: addChat, histort:[] })
+    catch (err) {
+        res.statusCode = 400
+        throw new Error(err);
     }
-    
 
-})
+}
 
-const groupChat = asyncHandler(async (req, res) => {
-    const id = req.params.chatId;
-    const checkChat = await Chat.findOne({ _id: id }).populate("users","-token -password");
-    if (!checkChat) {
-        return res.status(404).json({ message: 'Chat not found' });
-    }
-    res.status(200).send(checkChat);
-})
 
-const createGroupChat = async (req, res) => {
+
+const createChat = async (req, res) => {
     console.log("here")
     const curUser = req.current.id;
-    const { chatName } = req.body
+    const { chatName, members,isGroupChat ,chatAdmin} = req.body;
     if (chatName.length == 0) {
         return res.status(400).send("Chat name is required");
     }
+    console.log(curUser);
+    const users = [curUser, ...members];
+
     let newGroupChat = {
         chatName: chatName,
-        isGroupChat: true,
-        users: [curUser],
-        chatAdmin:[curUser]
-    }    
-    await Chat.create(newGroupChat)
-    res.status(200).json({ "New group chat is added": newGroupChat });
+        isGroupChat:isGroupChat,
+        users: users,
+        chatAdmin: chatAdmin
+    };    
 
-}
+    try {
+        const createdChat = await Chat.create(newGroupChat);
+        res.status(200).json({ "New group chat is added": createdChat });
+    } catch (error) {
+        console.error("Error creating group chat:", error);
+        res.status(500).send("Internal server error");
+    }
+};
 
 const addUserToGroup = async (req, res) => {
     const { userId } = req.body;
     const chatId = req.params.chatId;
     try {
-
-        const updatedChat = await Chat.findOneAndUpdate(
-            {
-                _id: chatId,
-                isGroupChat: true,
-                users:{$ne:userId}
-                
-            },
-            {
-                $push: { users: userId }
-            },
-
-            { new: true }
-        )
-        if (updatedChat == null) {
-            return res.status(400).send("This chat does not exist OR user already exists in this chat");
+        const chat = await Chat.findOne({ _id: chatId, isGroupChat: true });
+        if (!chat) {
+            return res.status(400).send("This chat does not exist or is not a group chat");
         }
-        res.status(200).json({updatedChat:updatedChat})
+        // Filter out the userIds that already exist in the chat
+        const newUserIds = userId.filter(id => !chat.users.includes(id));
+
+        if (newUserIds.length === 0) {
+            return res.status(400).send("All users already exist in this chat");
+        }
+
+    
+        //$each is used with $push to add each element in the object
+        const updatedChat = await Chat.findOneAndUpdate(
+            { _id: chatId },
+            { $push: { users: { $each: newUserIds } } },
+            { new: true }
+        );
+
+        res.status(200).json({ updatedChat: updatedChat });
+    } catch (err) {
+        console.error("Error adding user(s) to group chat:", err);
+        res.status(500).send("Internal server error");
     }
-    catch (err) {
-        console.log("In catch block")
-        res.statusCode = 400;
-        throw new Error(err)
-    }
-}
+};
 
 
-// last thing 
+
 const renameGroup = async (req, res) => {
     const curUser = req.current.id;
     const chatId = req.params.chatId;
@@ -125,9 +114,8 @@ const renameGroup = async (req, res) => {
 }
 
 module.exports = {
-    privateChat,
-    groupChat,
-    createGroupChat,
+    getChat,
+    createChat,
     addUserToGroup,
     renameGroup
 }
