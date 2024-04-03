@@ -5,6 +5,6 @@ const verify = require("../Middleware/verifyToken")
 
 router.get("/users", verify.verifyToken, userController.allUsers)
 
-router.post("/add-user/:id",verify.verifyToken,userController.addUser)
+// router.post("/add-user/:id",verify.verifyToken,userController.addUser)
 
 module.exports = router

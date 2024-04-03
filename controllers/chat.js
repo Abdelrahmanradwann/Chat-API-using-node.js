@@ -113,9 +113,58 @@ const renameGroup = async (req, res) => {
 
 }
 
+
+const removeFromChat = asyncHandler (async( req, res) => {
+    const curUserId = req.current.id;
+    const { deletedUserId, chatId } = req.body;
+    if (!chatId || !deletedUserId) {
+        return res.status(400).send("chat id and deleted user are required")
+    }
+    let chat = await Chat.findOne(
+        { _id: chatId, chatAdmin: { $in: curUserId } }       
+    )
+
+    console.log(curUserId)
+    if (chat == null) {
+        return res.status(400).send("You are not an admin in this chat")
+    }
+     chat = await Chat.updateOne(
+         { _id: chatId },
+         {
+             $pull: {
+                 users: deletedUserId,
+                 chatAdmin:deletedUserId
+             }
+         }
+    )
+    res.status(200).send(chat)
+
+})
+
+
+const exitChat = asyncHandler(async (req, res) => {
+    const curUserId = req.current.id;
+    const chatId = req.body.chatId
+    if (!curUserId) {
+        return res.status(400).send("user id is required");
+    }
+    const chat = await Chat.updateOne(
+        { _id: chatId ,isGroupChat:true},
+        {
+        $pull: {
+                users: curUserId,
+                chatAdmin:curUserId
+        }
+         }
+    )
+    res.status(200).send("user has exited successfully")
+
+})
 module.exports = {
     getChat,
     createChat,
     addUserToGroup,
-    renameGroup
+    renameGroup,
+    removeFromChat,
+    exitChat
 }
