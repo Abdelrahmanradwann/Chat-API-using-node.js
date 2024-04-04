@@ -3,7 +3,6 @@ const chatController = require("../controllers/chat")
 const verify = require("../Middleware/verifyToken")
 
 
-router.get("/chat/:chatId", verify.verifyToken, chatController.getChat)
 
 router.post("/chat/group", verify.verifyToken, chatController.createChat)
 

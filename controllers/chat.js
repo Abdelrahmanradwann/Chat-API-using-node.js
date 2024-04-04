@@ -3,35 +3,11 @@ const Chat = require("../models/chat")
 const User = require("../models/user")
 const Message = require("../models/message")
 
-//One to One chat
-
-const getChat = async (req, res) => {
-    console.log("in get chat")
-    const chatId = req.params.chatId;
-    try {
-        const chat = await Chat.findOne(
-            { _id: chatId }
-        )
-        if (chat.length == 0) {
-            return res.status(400).send("Chat not found");
-        }
-
-        const messages = await Message.find({ chat: chatId }).sort({ createdAt: -1 });
-        res.status(200).send({chatInfo: chat, history:messages })
-    }
-    catch (err) {
-        res.statusCode = 400
-        throw new Error(err);
-    }
-
-}
-
-
 
 const createChat = async (req, res) => {
     console.log("here")
     const curUser = req.current.id;
-    const { chatName, members,isGroupChat ,chatAdmin} = req.body;
+    const { chatName, members,isGroupChat ,chatAdmin,status} = req.body;
     if (chatName.length == 0) {
         return res.status(400).send("Chat name is required");
     }
@@ -42,7 +18,8 @@ const createChat = async (req, res) => {
         chatName: chatName,
         isGroupChat:isGroupChat,
         users: users,
-        chatAdmin: chatAdmin
+        chatAdmin: chatAdmin,
+        status:status
     };    
 
     try {
@@ -62,7 +39,12 @@ const addUserToGroup = async (req, res) => {
         if (!chat) {
             return res.status(400).send("This chat does not exist or is not a group chat");
         }
+
+        if (!chat.chatAdmin.includes(userId)) {
+            return res.status(400).send("Unauthorized access.You are not an admin in this group!")
+        }
         // Filter out the userIds that already exist in the chat
+        
         const newUserIds = userId.filter(id => !chat.users.includes(id));
 
         if (newUserIds.length === 0) {
@@ -86,7 +68,7 @@ const addUserToGroup = async (req, res) => {
 
 
 
-const renameGroup = async (req, res) => {
+const renameGroup = asyncHandler(async (req, res) => {
     const curUser = req.current.id;
     const chatId = req.params.chatId;
     const { updatedName } = req.body;
@@ -111,7 +93,7 @@ const renameGroup = async (req, res) => {
     })
 
 
-}
+})
 
 
 const removeFromChat = asyncHandler (async( req, res) => {
@@ -160,8 +142,12 @@ const exitChat = asyncHandler(async (req, res) => {
     res.status(200).send("user has exited successfully")
 
 })
+
+//to be added  -> return all users in specific chat using chatId
+
+
+
 module.exports = {
-    getChat,
     createChat,
     addUserToGroup,
     renameGroup,

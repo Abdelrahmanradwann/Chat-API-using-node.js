@@ -3,7 +3,7 @@ const asyncHandler = require("express-async-handler")
 const Chat = require("../models/chat")
 
 
-// need to be updated bec I should also return the gps of this user
+
 const allUsers = asyncHandler(async (req, res) => {
     const curUserId = req.current.id;
     const chat = await Chat.find(
