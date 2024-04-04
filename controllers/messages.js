@@ -1,6 +1,7 @@
 const Message = require("../models/message")
 const Chat = require("../models/chat")
-const asyncHandler = require("express-async-handler")
+const asyncHandler = require("express-async-handler");
+const { use } = require("../routes/messages");
 // SENDING
 // GET ALL MESSAGES
 // READ BY
@@ -65,23 +66,9 @@ const getMessage = async (req, res) => {
 
 }
 
-const updatereadBy = async (req, res) => {
-    const { messageId } = req.body;
-    const curUserId = req.current.id;
-    try {
-    const result = await Message.updateMany(
-        { _id:messageId, readBy: { $ne: curUserId } },
-        { $push: { readBy: curUserId } }        
-        );
-        
-        res.status(200).send("User had read the message without errors")
-    } catch (error) {
-        throw new Error(error);
-    }
-}
+
 
 module.exports = {
     sendMessage,
     getMessage,
-    updatereadBy
 }

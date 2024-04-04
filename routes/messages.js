@@ -4,7 +4,6 @@ const verify = require("../Middleware/verifyToken")
 const messageController = require("../controllers/messages")
 
 
-router.post("/message/read",verify.verifyToken,messageController.updatereadBy)
 
 router.post("/message/:chatId", verify.verifyToken, messageController.sendMessage)
 
