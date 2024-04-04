@@ -13,8 +13,12 @@ const fetchChats = asyncHandler(async (req, res) => {
         path: "users",
         match: { _id: { $ne: curUserId } },
         select: "username profilepic"
-    }).sort({updateAt:-1});
-
+    }).sort({ updateAt: -1 });
+    
+    if (chat == null) {
+        return res.status(404).json({ msg: "No messages found" })
+    }
+ 
     res.status(200).send({
         friends:chat
     })
@@ -23,10 +27,10 @@ const fetchChats = asyncHandler(async (req, res) => {
 
 
 const createChat = async (req, res) => {
-    console.log("here")
     const curUser = req.current.id;
     const { chatName, members, isGroupChat, chatAdmin, status } = req.body;
-    if (!members || !isGroupChat || !chatAdmin) {
+ 
+    if (!members || isGroupChat.length==0 || !chatAdmin) {
         return res.status(400).send("Please fill the required fields")
     }
     if (chatName.length == 0 && isGroupChat == true) {
@@ -35,6 +39,13 @@ const createChat = async (req, res) => {
     const users = [curUser, ...members];
     if (users.length < 2 && isGroupChat==true) {
         return res.status(400).send("More than 2 users are required to form a group chat")
+    }
+
+    if (isGroupChat == false) {   
+        const isExist = await Chat.findOne({ users: { $all: [curUser, members[0]] } })
+        if (isExist) {
+            return res.status(400).json({msg: "Chat already exists"})
+        }
     }
     let newGroupChat = {
         chatName: "",
@@ -47,26 +58,26 @@ const createChat = async (req, res) => {
 
     try {
         let createdChat = await Chat.create(newGroupChat);
-        await Chat.populate(createdChat, { path: 'users', select: '-password' });
-        await Chat.populate(createdChat, { path: 'chatAdmin', select: '-password' });
-        res.status(200).json({ "New group chat is added": createdChat });
+        await Chat.populate(createdChat, { path: 'users', select: '-password' }); await Chat.populate(createdChat, { path: 'chatAdmin', select: '-password' });
+        res.status(201).json({ "New group chat is added": createdChat });
     } catch (error) {
         console.error("Error creating group chat:", error);
         res.status(500).send("Internal server error");
     }
 };
-
 const addUserToGroup = async (req, res) => {
     const { userId } = req.body;
     const chatId = req.params.chatId;
+    if (!userId || !chatId) {
+        return res.status(400).send("Please fill the required fields")
+    }
     try {
         const chat = await Chat.findOne({ _id: chatId, isGroupChat: true });
         if (!chat) {
             return res.status(400).send("This chat does not exist or is not a group chat");
         }
-
-        if (!chat.chatAdmin.includes(userId)) {
-            return res.status(400).send("Unauthorized access.You are not an admin in this group!")
+        if (!chat.chatAdmin.includes(req.current.id)) {
+            return res.status(401).send("Unauthorized access.You are not an admin in this group!")
         }
         // Filter out the userIds that already exist in the chat
         
@@ -97,11 +108,18 @@ const renameGroup = asyncHandler(async (req, res) => {
     const curUser = req.current.id;
     const chatId = req.params.chatId;
     const { updatedName } = req.body;
-    if (updatedName.length == 0) {
-        return res.status(400).send("Name is required for group chat");
+    if (!updatedName || !curUser || !chatId) {
+        return res.status(400).send("Please fill all the required fields");
     }
+
+    const isChatExist = await Chat.findOne(
+        {_id:chatId}
+    )
+    if (isChatExist == null) {
+        return res.status(400).send("Chat not found")
+    }
+
     let chat = null;
-    //check if user is admin
     chat = await Chat.findOne(
         {
             _id: chatId,
@@ -109,13 +127,11 @@ const renameGroup = asyncHandler(async (req, res) => {
         }
     )
     if (chat == null) {
-        return res.status(400).send("Unauthorized access");
+        return res.status(401).send("Unauthorized access");
     }
     chat.chatName = updatedName
     await chat.save()
-    res.status(200).json({
-        updatedchat:chat
-    })
+    res.status(200).json({ updatedchat:chat })
 
 
 })
@@ -125,15 +141,29 @@ const removeFromChat = asyncHandler (async( req, res) => {
     const curUserId = req.current.id;
     const { deletedUserId, chatId } = req.body;
     if (!chatId || !deletedUserId) {
-        return res.status(400).send("chat id and deleted user are required")
+        return res.status(400).send("Chat id and user are required")
     }
+
+    const isChatExist = await Chat.findOne(
+    {_id:chatId , isGroupChat:true}
+    )
+    if (isChatExist == null) {
+        return res.status(400).send("Chat not found")
+    }
+
+    const isMember = await Chat.findOne(
+        {_id:chatId,users:{$in:deletedUserId}}
+    )
+    if (isMember == null) {
+        return res.status(400).send("User not found")
+    }
+
+
     let chat = await Chat.findOne(
         { _id: chatId, chatAdmin: { $in: curUserId } }       
     )
-
-    console.log(curUserId)
     if (chat == null) {
-        return res.status(400).send("You are not an admin in this chat")
+        return res.status(401).send("You are not an admin in this chat")
     }
      chat = await Chat.updateOne(
          { _id: chatId },
@@ -144,7 +174,7 @@ const removeFromChat = asyncHandler (async( req, res) => {
              }
          }
     )
-    res.status(200).send(chat)
+    res.status(200).json({msg:"User was removed from the gp successfully"}, { chat: chat })
 
 })
 
@@ -155,6 +185,14 @@ const exitChat = asyncHandler(async (req, res) => {
     if (!curUserId) {
         return res.status(400).send("user id is required");
     }
+
+    const isChatExist = await Chat.findOne(
+        {_id:chatId}
+        )
+        if (isChatExist == null) {
+            return res.status(400).send("Chat not found")
+        }
+
     const chat = await Chat.updateOne(
         { _id: chatId ,isGroupChat:true},
         {

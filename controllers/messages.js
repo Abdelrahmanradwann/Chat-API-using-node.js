@@ -38,7 +38,6 @@ const sendMessage = ( async (req, res) => {
             throw new Error(err)
         }
     } catch (err) {
-        console.log("wtffff")
         res.StatusCode = 400;
         throw new Error(err)
     }
@@ -56,7 +55,7 @@ const getMessage = async (req, res) => {
             { _id: chatId }
         )
         if (chat.length == 0) {
-            return res.status(400).send("Chat not found");
+            return res.status(404).send("Chat not found");
         }
 
         const messages = await Message.find({ chat: chatId }).sort({ createdAt: -1 });
