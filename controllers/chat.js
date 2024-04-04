@@ -8,19 +8,18 @@ const createChat = async (req, res) => {
     console.log("here")
     const curUser = req.current.id;
     const { chatName, members,isGroupChat ,chatAdmin,status} = req.body;
-    if (chatName.length == 0) {
-        return res.status(400).send("Chat name is required");
+    if (chatName.length == 0 && isGroupChat == true) {
+        return res.status(400).send("Chat name is required for group chat");
     }
-    console.log(curUser);
     const users = [curUser, ...members];
-
     let newGroupChat = {
-        chatName: chatName,
-        isGroupChat:isGroupChat,
+        chatName: "",
+        isGroupChat: isGroupChat,
         users: users,
         chatAdmin: chatAdmin,
-        status:status
-    };    
+        status: status
+    };
+
 
     try {
         const createdChat = await Chat.create(newGroupChat);

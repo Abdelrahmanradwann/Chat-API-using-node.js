@@ -4,7 +4,7 @@ const verify = require("../Middleware/verifyToken")
 
 
 
-router.post("/chat/group", verify.verifyToken, chatController.createChat)
+router.post("/chat", verify.verifyToken, chatController.createChat)
 
 router.post("/chat/add/group/:chatId", verify.verifyToken, chatController.addUserToGroup)
 
