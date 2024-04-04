@@ -4,14 +4,38 @@ const User = require("../models/user")
 const Message = require("../models/message")
 
 
+
+const fetchChats = asyncHandler(async (req, res) => {
+    const curUserId = req.current.id;
+    const chat = await Chat.find(
+    { users: { $in: curUserId } }
+    ).populate({
+        path: "users",
+        match: { _id: { $ne: curUserId } },
+        select: "username profilepic"
+    }).sort({updateAt:-1});
+
+    res.status(200).send({
+        friends:chat
+    })
+})
+
+
+
 const createChat = async (req, res) => {
     console.log("here")
     const curUser = req.current.id;
-    const { chatName, members,isGroupChat ,chatAdmin,status} = req.body;
+    const { chatName, members, isGroupChat, chatAdmin, status } = req.body;
+    if (!members || !isGroupChat || !chatAdmin) {
+        return res.status(400).send("Please fill the required fields")
+    }
     if (chatName.length == 0 && isGroupChat == true) {
         return res.status(400).send("Chat name is required for group chat");
     }
     const users = [curUser, ...members];
+    if (users.length < 2 && isGroupChat==true) {
+        return res.status(400).send("More than 2 users are required to form a group chat")
+    }
     let newGroupChat = {
         chatName: "",
         isGroupChat: isGroupChat,
@@ -22,7 +46,9 @@ const createChat = async (req, res) => {
 
 
     try {
-        const createdChat = await Chat.create(newGroupChat);
+        let createdChat = await Chat.create(newGroupChat);
+        await Chat.populate(createdChat, { path: 'users', select: '-password' });
+        await Chat.populate(createdChat, { path: 'chatAdmin', select: '-password' });
         res.status(200).json({ "New group chat is added": createdChat });
     } catch (error) {
         console.error("Error creating group chat:", error);
@@ -142,11 +168,11 @@ const exitChat = asyncHandler(async (req, res) => {
 
 })
 
-//to be added  -> return all users in specific chat using chatId
 
 
 
 module.exports = {
+    fetchChats,
     createChat,
     addUserToGroup,
     renameGroup,

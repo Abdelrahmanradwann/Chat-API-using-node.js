@@ -48,6 +48,9 @@ const sendMessage = ( async (req, res) => {
 
 const getMessage = async (req, res) => {
     const chatId = req.params.chatId;
+    if (!chatId) {
+        return res.status(400).send("Chat ID is required")
+    }
     try {
         const chat = await Chat.findOne(
             { _id: chatId }
