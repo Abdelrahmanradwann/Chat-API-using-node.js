@@ -68,9 +68,56 @@ const getMessage = async (req, res) => {
 
 }
 
+const updateReadMsg = asyncHandler(async(req, res)=> {
+    const { chatId } = req.params;
+    const curUserId = req.current.id;
+    if (!chatId || !curUserId) {
+        return res.status(400).json({ msg: "Please send all the required fields" }); 
+    }
+    const isExist = await Chat.findOne({ _id: chatId, users: { $in: curUserId } });
+    if (isExist == null) {
+        return res.status(404).json({ msg: "Chat not found or you are not exist in this chat" });
+    }
+    const messages = await Message.find({ chat: chatId });
+    if (messages) {
+        const unreadMessages = messages.filter(message => !message.readBy.includes(curUserId));
+        unreadMessages.forEach(async (message) => {
+                message.readBy.push(curUserId);
+                await message.save();
+        });
+        res.status(200).json({msg:"Messages were read by user successfully"})
+    } else {
+        res.status(404).json({ msg: "No messages in this chat" });
+    }
+
+})
+
+const readBy = asyncHandler(async (req, res) => {
+    const { messageId, chatId } = req.params;
+    const curUserId = req.current.id;
+    if (!messageId || !chatId) {
+        return res.status(400).json({ msg: "Please send all the required fields" });
+    }
+    let isExist = await Chat.findOne({ _id: chatId, users: { $in: curUserId } });
+    if (isExist == null) {
+        return res.status(404).msg({ msg: "You 're not a member in this chat" });
+    }
+    const message = await Message.findOne({ _id: messageId, chat: chatId }).populate({path:"readBy",select:"username email profilepic"});
+    if (message == null) {
+        return res.status(400).json({ msg: "This message is not in this chat" });
+    }
+    const senderId = message.sender;
+    if (senderId != curUserId) {
+        return res.status(400).json({ msg: "Only the sender of this message can see who has read it" });
+    }
+    res.status(200).json({users:message.readBy})
+})
+
 
 
 module.exports = {
     sendMessage,
     getMessage,
+    updateReadMsg,
+    readBy
 }

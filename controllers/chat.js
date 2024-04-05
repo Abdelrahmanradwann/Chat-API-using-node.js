@@ -42,13 +42,16 @@ const createChat = async (req, res) => {
     }
 
     if (isGroupChat == false) {   
+        if (members.length > 1) {
+            return res.status(400).json({ msg: "This is not a group chat.You cannot add more than one member" });
+        }
         const isExist = await Chat.findOne({ users: { $all: [curUser, members[0]] } })
         if (isExist) {
             return res.status(400).json({msg: "Chat already exists"})
         }
     }
     let newGroupChat = {
-        chatName: "",
+        chatName: (isGroupChat==true?chatName:""),
         isGroupChat: isGroupChat,
         users: users,
         chatAdmin: chatAdmin,
