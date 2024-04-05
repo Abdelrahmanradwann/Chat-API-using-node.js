@@ -65,6 +65,7 @@ const createChat = async (req, res) => {
         res.status(500).send("Internal server error");
     }
 };
+
 const addUserToGroup = async (req, res) => {
     const { userId } = req.body;
     const chatId = req.params.chatId;
@@ -207,6 +208,39 @@ const exitChat = asyncHandler(async (req, res) => {
 })
 
 
+const addAdmin = asyncHandler(async (req, res) => {
+    const curUserId = req.current.id;
+    const { userId } = req.params;
+    const { chatId } = req.params;
+    if (userId && curUserId && chatId) {
+        const chat = await Chat.findOne({ _id: chatId ,isGroupChat:true});
+        if (chat != null) {
+            const isAdmin = chat.chatAdmin.includes(curUserId);
+            if (isAdmin) {
+                const isUserExist = chat.users.includes(userId);
+                if (isUserExist) {
+                    const isAdmin = chat.chatAdmin.includes(userId);
+                    if (isAdmin) {
+                        return res.status(400).json({ msg: "User is already an admin" });
+                    } else {
+                        chat.chatAdmin.push(userId);
+                        await chat.save();
+                        return res.status(200).json({ msg: "User is now an admin" });
+                    }
+                } else {
+                    res.status(404).json({ msg: "User not found" });
+                }
+            } else {
+                res.status(401).json({ msg: "Unauthorized access, you are not an admin!" });
+            }
+        } else {
+            res.status(404).json({ msg: "Chat not found or it is not a group chat" });
+        }
+    } else {
+        return res.status(400).json({ msg: "Please send all the required fields" });
+    }
+});
+
 
 
 module.exports = {
@@ -215,5 +249,6 @@ module.exports = {
     addUserToGroup,
     renameGroup,
     removeFromChat,
-    exitChat
+    exitChat, 
+    addAdmin
 }

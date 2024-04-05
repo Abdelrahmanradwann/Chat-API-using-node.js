@@ -14,6 +14,8 @@ router.post("/chat/rename/:chatId", verify.verifyToken, chatController.renameGro
 
 router.post("/chat/remove", verify.verifyToken, chatController.removeFromChat)
 
-router.post("/chat/exit",verify.verifyToken,chatController.exitChat)
+router.post("/chat/exit", verify.verifyToken, chatController.exitChat)
+
+router.put("/chat/admin/:userId/:chatId",verify.verifyToken,chatController.addAdmin)
 
 module.exports = router
