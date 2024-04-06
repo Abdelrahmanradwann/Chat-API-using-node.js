@@ -16,6 +16,8 @@ router.post("/chat/remove", verify.verifyToken, chatController.removeFromChat)
 
 router.post("/chat/exit", verify.verifyToken, chatController.exitChat)
 
-router.put("/chat/admin/:userId/:chatId",verify.verifyToken,chatController.addAdmin)
+router.put("/chat/admin/:userId/:chatId", verify.verifyToken, chatController.addAdmin)
+
+router.post("/chat/create-link/:chatId",verify.verifyToken,chatController.createGroupLink)
 
 module.exports = router

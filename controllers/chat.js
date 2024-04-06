@@ -2,7 +2,7 @@ const asyncHandler = require("express-async-handler")
 const Chat = require("../models/chat")
 const User = require("../models/user")
 const Message = require("../models/message")
-
+const { v4: uuidv4 } = require('uuid');
 
 
 const fetchChats = asyncHandler(async (req, res) => {
@@ -71,38 +71,58 @@ const createChat = async (req, res) => {
 
 const addUserToGroup = async (req, res) => {
     const { userId } = req.body;
-    const chatId = req.params.chatId;
-    if (!userId || !chatId) {
-        return res.status(400).send("Please fill the required fields")
+    if (!userId) {
+        return res.status(400).send("Please send user ID")
     }
-    try {
-        const chat = await Chat.findOne({ _id: chatId, isGroupChat: true });
+    if (!req.body.link) {
+        const chatId = req.params.chatId;
+        if (!chatId) {
+            return res.status(400).send("Please send the chat ID");
+        }
+        try {
+            const chat = await Chat.findOne({ _id: chatId, isGroupChat: true });
+            if (!chat) {
+                return res.status(400).send("This chat does not exist or is not a group chat");
+            }
+            if (!chat.chatAdmin.includes(req.current.id)) {
+                return res.status(401).send("Unauthorized access.You are not an admin in this group!")
+            }
+            // Filter out the userIds that already exist in the chat     
+            const newUserIds = userId.filter(id => !chat.users.includes(id));
+
+            if (newUserIds.length === 0) {
+                return res.status(400).send("All users already exist in this chat");
+            }
+            //$each is used with $push to add each element in the object
+            const updatedChat = await Chat.findOneAndUpdate(
+                { _id: chatId },
+                { $push: { users: { $each: newUserIds } } },
+                { new: true }
+            );
+
+            res.status(200).json({ updatedChat: updatedChat });
+        } catch (err) {
+            console.error("Error adding user(s) to group chat:", err);
+            res.status(500).send("Internal server error");
+        }
+    } else {
+        const { link } = req.body;
+        const chat = await Chat.findOne({ link: link });
         if (!chat) {
-            return res.status(400).send("This chat does not exist or is not a group chat");
+            return res.status(404).json({ msg: "Chat not found" });
         }
-        if (!chat.chatAdmin.includes(req.current.id)) {
-            return res.status(401).send("Unauthorized access.You are not an admin in this group!")
+        const curDate = new Date();
+        if (curDate > chat.expirationDate) {
+            return res.status(400).json({ msg: "This link expired.Try to contact the admin of this group" });
         }
-        // Filter out the userIds that already exist in the chat
-        
-        const newUserIds = userId.filter(id => !chat.users.includes(id));
-
-        if (newUserIds.length === 0) {
-            return res.status(400).send("All users already exist in this chat");
+        const isAlreadyExist = await chat.users.includes(userId);
+        if(!isAlreadyExist){
+            chat.users.push(userId);
+            await chat.save();
+            res.status(200).json({ msg: "User is added successfully", chat: chat });
+        } else {
+            return res.status(400).json({ msg: "You already exist in this group" });
         }
-
-    
-        //$each is used with $push to add each element in the object
-        const updatedChat = await Chat.findOneAndUpdate(
-            { _id: chatId },
-            { $push: { users: { $each: newUserIds } } },
-            { new: true }
-        );
-
-        res.status(200).json({ updatedChat: updatedChat });
-    } catch (err) {
-        console.error("Error adding user(s) to group chat:", err);
-        res.status(500).send("Internal server error");
     }
 };
 
@@ -244,6 +264,43 @@ const addAdmin = asyncHandler(async (req, res) => {
     }
 });
 
+const createGroupLink = asyncHandler(async(req, res)=> {
+    const curUserId = req.current.id;
+    const { chatId } = req.params;
+    if (!chatId) {
+        return res.status(400).json({ msg: "Chat ID is required" });
+    }
+    const chat = await Chat.findOne({ _id: chatId });
+    if (!chat) {
+        return res.status(404).json({ msg: "Chat not found" });
+    }
+    const isGroup = chat.isGroupChat == true;
+    if (!isGroup) {
+        return res.status(400).json({ msg: "Not a group chat" });
+    }
+    const isAdmin = await chat.chatAdmin.includes(curUserId);
+    if (isAdmin) {
+        const randomBits = uuidv4();
+        const link = `https://group-chat/${randomBits}`;
+        const curDate = new Date();
+        const { expirationDate } = req.body;
+        let expireDate;
+        if (expirationDate) {
+            expireDate = new Date(expirationDate);
+        } else {
+            expireDate = new Date(curDate);
+            expireDate.setMonth(expireDate.getMonth() + 3);
+        }
+        chat.link = link;
+        chat.expirationDate = expireDate
+        const updatedChat = await chat.save();
+        res.status(201).json({msg:"Link created successfully",chat:updatedChat})
+        
+    } else {
+        return res.status(401).json({ msg: "Not authorized" });
+    }
+})
+
 
 
 module.exports = {
@@ -253,5 +310,6 @@ module.exports = {
     renameGroup,
     removeFromChat,
     exitChat, 
-    addAdmin
+    addAdmin,
+    createGroupLink
 }

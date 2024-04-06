@@ -20,7 +20,10 @@ const chatSchema = mongoose.Schema({
     status: {
         type: String,
         default:""
-    }
+    },
+    link: String,
+    expirationDate:Date
+    
 })
 
 module.exports = mongoose.model("Chat",chatSchema)
