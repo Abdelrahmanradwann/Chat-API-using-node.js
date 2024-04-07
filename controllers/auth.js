@@ -56,7 +56,11 @@ const signUp = asyncHandler(async (req, res, next) => {
         email
     })
 
-   
+    // console.log(req.file["avatar"].filename);
+    if (req.file) {
+        newUser.avatar = req.file.filename;
+    }
+
     const token = await generate({id:newUser._id,email:newUser.email});
     newUser.token = token;
     await newUser.save()

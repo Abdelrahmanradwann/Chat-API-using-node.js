@@ -1,24 +1,6 @@
 const mongoose = require("mongoose")
 
 
-
-const friendSchema = mongoose.Schema({
-    name: {
-        type: String,
-        required: true
-    },
-    email: {
-        type: String,
-        required: true
-    },
-    id: {
-        type: mongoose.Schema.Types.ObjectId, 
-        required: true
-    }
-});
-
-
-
 const userSchema = mongoose.Schema({
 
     username: {
@@ -37,9 +19,9 @@ const userSchema = mongoose.Schema({
         min: 6,
         trim:true
     },
-    profilePic: {
+    avatar: {
         type: String,
-        default:""
+        default:'/uploads/default.jpeg'
     },
     friends: {
         type: Array,
