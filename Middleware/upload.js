@@ -18,8 +18,7 @@ const storage = multer.diskStorage({
 
    filename: (req, file, cb) => {
     const ext = file.mimetype.split('/')[1];
-       const fileName = `FILE-${Date.now()}.${ext}`;
-       console.log(fileName)
+    const fileName = `${req.current.id}.${ext}`;
     cb(null, fileName); // Set the filename
     },
 });
@@ -27,7 +26,6 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
     const fileType = file.mimetype.split("/")[0];
-    console.log("In file filter"+" "+fileType)
   if (fileType === "image" || fileType === "audio") {
     return cb(null, true);
   } else {

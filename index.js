@@ -8,6 +8,7 @@ const chatOper = require("./routes/chat")
 const messOper = require("./routes/messages")
 const path = require("path")
 const verify = require("./Middleware/verifyToken");
+const validate = require("./Middleware/validates")
 
 mongoose.connect(process.env.URL).then(() => {
     console.log("connected to API database")
@@ -17,7 +18,12 @@ mongoose.connect(process.env.URL).then(() => {
 
 
 app.use(express.json())
-app.use("/api/profilePic", verify.verifyToken, express.static(path.join(__dirname, "uploadsProfilePic")));
+app.use("/api/profilePic", verify.verifyToken, validate.isPermitted, (req, res, next) => {
+  console.log("yeeah")
+  res.setHeader("Content-Type", "image/jpeg")
+  next()
+},express.static(path.join(__dirname, "uploadProfilePic")));
+
 
 app.use(userAuth)
 app.use(chatOper)

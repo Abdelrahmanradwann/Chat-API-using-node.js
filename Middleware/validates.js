@@ -1,5 +1,5 @@
 const yup = require('yup');
-
+const Chat = require("../models/chat")
 
 const loginSchema = yup.object().shape({
     email: yup.string().required('Email is required'),
@@ -13,7 +13,26 @@ const registerSchema = yup.object().shape({
 });
 
 
+
+const isPermitted = async (req, res, next) => {
+    const userIdLink = req.originalUrl.split('/')[3];
+    console.log(userIdLink+" "+"here");
+    const isInSameGp = await Chat.findOne(
+        { users: { $in:  [req.current.id, userIdLink]  } }
+    )
+    console.log(isInSameGp);
+    if (!isInSameGp) {
+        throw new Error("Unauthorized");
+    }
+    console.log("in is permitted")
+    next();
+}
+
+
+
+
 module.exports  = {
-       registerSchema,
-        loginSchema
+    registerSchema,
+    loginSchema,
+    isPermitted
 }

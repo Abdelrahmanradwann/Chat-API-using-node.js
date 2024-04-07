@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 
 const verifyToken = (req, res, next) => {
-      console.log("In verify Token")
       const authtoken = req.headers["Authorization"] || req.headers["authorization"];
       if (!authtoken) {
         res.StatusCode = 400;
