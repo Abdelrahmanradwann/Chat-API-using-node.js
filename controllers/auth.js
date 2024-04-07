@@ -3,9 +3,7 @@ const authValidation = require("../Middleware/validates")
 const bcrypt = require("bcrypt")
 const User = require("../models/user")
 const { generate } = require("../util/genToken")
-const jwt = require("jsonwebtoken");
-const { use } = require("../routes/messages")
-const user = require("../models/user")
+const mail = require("../Middleware/mail")
 
 const logIn = asyncHandler(async (req, res, next) => {
 
@@ -58,20 +56,14 @@ const signUp = asyncHandler(async (req, res, next) => {
         email
     })
 
-    // console.log(req.file["avatar"].filename);
-    if (req.file) {
-        newUser.avatar = req.file.filename;
-    }
-
     const token = await generate({ id: newUser._id, email: newUser.email });
-    console.log(token)
     newUser.token = token;
     await newUser.save()
-    if (req.file) {
-        const SECRET_KEY = process.env.SECRET_KEY
-        const curuser = jwt.verify(token,SECRET_KEY);
-        newUser.avatar = curuser.id;
-        await newUser.save();
+    const check = await mail.confirmSignUp(email, username);
+    if (check == "error") {
+        const error = new Error("error in signing up");
+        error.statusCode = 400;
+        throw error;
     }
     res.status(200).send("User is added successfully")
 

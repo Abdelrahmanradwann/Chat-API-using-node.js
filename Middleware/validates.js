@@ -15,16 +15,18 @@ const registerSchema = yup.object().shape({
 
 
 const isPermitted = async (req, res, next) => {
-    const userIdLink = req.originalUrl.split('/')[3];
-    console.log(userIdLink+" "+"here");
+   
+    let userIdLink = req.originalUrl.split('/')[4]
+    console.log(userIdLink)
+    userIdLink = userIdLink.split('.')[0];
+    console.log(userIdLink+" "+req.current.id);
     const isInSameGp = await Chat.findOne(
         { users: { $in:  [req.current.id, userIdLink]  } }
     )
-    console.log(isInSameGp);
     if (!isInSameGp) {
         throw new Error("Unauthorized");
     }
-    console.log("in is permitted")
+    console.log(isInSameGp);
     next();
 }
 

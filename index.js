@@ -18,11 +18,12 @@ mongoose.connect(process.env.URL).then(() => {
 
 
 app.use(express.json())
-app.use("/api/profilePic", verify.verifyToken, validate.isPermitted, (req, res, next) => {
-  console.log("yeeah")
-  res.setHeader("Content-Type", "image/jpeg")
+
+app.use("/api/profilePic/uploadProfilePic", verify.verifyToken, validate.isPermitted, (req, res, next) => {
+  res.setHeader("Content-Type", "image/jpeg") 
   next()
-},express.static(path.join(__dirname, "uploadProfilePic")));
+},express.static("uploadProfilePic"));
+
 
 
 app.use(userAuth)
