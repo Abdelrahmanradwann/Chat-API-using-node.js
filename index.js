@@ -8,7 +8,8 @@ const chatOper = require("./routes/chat")
 const messOper = require("./routes/messages")
 const path = require("path")
 const verify = require("./Middleware/verifyToken");
-const validate = require("./Middleware/validates")
+const validate = require("./Middleware/validates");
+const exp = require("constants");
 
 mongoose.connect(process.env.URL).then(() => {
     console.log("connected to API database")
@@ -19,10 +20,15 @@ mongoose.connect(process.env.URL).then(() => {
 
 app.use(express.json())
 
-app.use("/api/profilePic/uploadProfilePic", verify.verifyToken, validate.isPermitted, (req, res, next) => {
+app.use("/api/profilePic/uploadProfilePic", verify.verifyToken, validate.isPermittedPic, (req, res, next) => {
   res.setHeader("Content-Type", "image/jpeg") 
   next()
-},express.static("uploadProfilePic"));
+}, express.static("uploadProfilePic"));
+
+app.use("/api/audio/uploadVoiceMsg", verify.verifyToken, validate.isPermittedVoice, (req, res, next) => {
+  res.setHeader("Content-Type", "audio/mp3");
+  next()
+}, express.static("uploadVoiceMsg"));
 
 
 

@@ -19,6 +19,10 @@ const messageSchema = mongoose.Schema({
         ref: "Chat",
         required:true
     },
+    attachment: {
+        type: String,
+        default:""
+    }
 },
     {
      timestamps:true

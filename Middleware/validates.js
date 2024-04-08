@@ -1,5 +1,6 @@
 const yup = require('yup');
 const Chat = require("../models/chat")
+const Message = require("../models/message")
 
 const loginSchema = yup.object().shape({
     email: yup.string().required('Email is required'),
@@ -14,7 +15,7 @@ const registerSchema = yup.object().shape({
 
 
 
-const isPermitted = async (req, res, next) => {
+const isPermittedPic = async (req, res, next) => {
    
     let userIdLink = req.originalUrl.split('/')[4]
     console.log(userIdLink)
@@ -24,10 +25,32 @@ const isPermitted = async (req, res, next) => {
         { users: { $in:  [req.current.id, userIdLink]  } }
     )
     if (!isInSameGp) {
-        throw new Error("Unauthorized");
+       return res.status(400).json({ msg: "Unauthorized" });
     }
-    console.log(isInSameGp);
     next();
+}
+
+
+const isPermittedVoice = async (req, res, next) => {
+    let voiceId = req.originalUrl.split('/')[4]
+    if (!voiceId) {
+         return res.status(400).json({ msg: "Bad request" });
+    }
+    const msg = await Message.findOne(
+        { attachment: voiceId }
+    )
+    if (!msg) {
+        return res.status(404).json({ msg: "Message not found" });
+    }
+    const chat = await Chat.findOne(
+        {_id: msg.chat}
+    )
+    const isUserValid = chat.users.includes(req.current.id);
+    if (!isUserValid) {
+        return res.status(400).json({ msg: "Unauthorized" });
+    }
+    next();
+
 }
 
 
@@ -36,5 +59,6 @@ const isPermitted = async (req, res, next) => {
 module.exports  = {
     registerSchema,
     loginSchema,
-    isPermitted
+    isPermittedPic,
+    isPermittedVoice
 }

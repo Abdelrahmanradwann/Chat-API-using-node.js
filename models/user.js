@@ -23,10 +23,6 @@ const userSchema = mongoose.Schema({
         type: String,
         default:'default.jpeg'
     },
-    friends: {
-        type: Array,
-        default:[]
-    },
     token: {
         type: String,
         required:true

@@ -11,7 +11,6 @@ const sendMessage = ( async (req, res) => {
     //senderID
     //chatID
     //content
-
     const curUserId = req.current.id;
     const { chatId } = req.params;
     const { content } = req.body;
@@ -23,12 +22,13 @@ const sendMessage = ( async (req, res) => {
         if (content.length == 0) {
             return res.status(400).send("Message is required")
         }
+        console.log(req.file.path)
         const message = new Message({
         sender: curUserId,
-        chatId: chatId,
         content: content,
         readBy: [],
-        chat:chatId
+        chat: chatId,
+        attachment: req.file ? req.file.path.split('\\')[1] : ""
     
     })
         try {
