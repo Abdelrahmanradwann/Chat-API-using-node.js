@@ -22,7 +22,6 @@ const sendMessage = ( async (req, res) => {
         if (content.length == 0) {
             return res.status(400).send("Message is required")
         }
-        console.log(req.file.path)
         const message = new Message({
         sender: curUserId,
         content: content,
@@ -33,7 +32,21 @@ const sendMessage = ( async (req, res) => {
     })
         try {
             await message.save();
-            res.status(200).send("Message was sent successfully");
+            const chat = await Chat.findOne(
+                { _id: chatId }
+            );
+            const users = chat.users
+            const server = require("../index")
+            const io = server.getIo();
+            if (io) {
+                users.forEach(user => {
+                    const recieverSocketId = userToSocket.get(user.toString());          
+                    if (recieverSocketId) {
+                        return io.to(recieverSocketId).emit('recieve-msg',message.content);
+                    }
+                })   
+                return res.status(200).json({ msg: "Message sent successfully" });
+            }
         } catch (err) {
             throw new Error(err)
         }
