@@ -10,7 +10,7 @@ const loginSchema = yup.object().shape({
 const registerSchema = yup.object().shape({
     username: yup.string().required('Username is required'),
     email: yup.string().email('Invalid email address').required('Email is required'),
-    password: yup.string().required('Password is required').min(6, 'Password must be at least 6 characters long')
+    password: yup.string().min(6, 'Password must be at least 6 characters long').required("Password is required")
 });
 
 
@@ -18,9 +18,7 @@ const registerSchema = yup.object().shape({
 const isPermittedPic = async (req, res, next) => {
    
     let userIdLink = req.originalUrl.split('/')[4]
-    console.log(userIdLink)
     userIdLink = userIdLink.split('.')[0];
-    console.log(userIdLink+" "+req.current.id);
     const isInSameGp = await Chat.findOne(
         { users: { $in:  [req.current.id, userIdLink]  } }
     )

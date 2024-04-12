@@ -30,7 +30,7 @@ const createChat = async (req, res) => {
     const curUser = req.current.id;
     const { chatName, members, isGroupChat, chatAdmin, status } = req.body;
  
-    if (!members || isGroupChat.length==0 || !chatAdmin) {
+    if (members.length==0 || isGroupChat.length==0 || !chatAdmin) {
         return res.status(400).send("Please fill the required fields")
     }
     if (chatName.length == 0 && isGroupChat == true) {
@@ -45,7 +45,7 @@ const createChat = async (req, res) => {
         if (members.length > 1) {
             return res.status(400).json({ msg: "This is not a group chat.You cannot add more than one member" });
         }
-        const isExist = await Chat.findOne({ users: { $all: [curUser, members[0]] } })
+        const isExist = await Chat.findOne({ users: { $all: [curUser, members[0]] },isGroupChat:false })
         if (isExist) {
             return res.status(400).json({msg: "Chat already exists"})
         }
@@ -115,13 +115,14 @@ const addUserToGroup = async (req, res) => {
         if (curDate > chat.expirationDate) {
             return res.status(400).json({ msg: "This link expired.Try to contact the admin of this group" });
         }
-        const isAlreadyExist = await chat.users.includes(userId);
+        const isAlreadyExist = chat.users.map(user => user.toString()).includes(userId.toString());
         if(!isAlreadyExist){
             chat.users.push(userId);
             await chat.save();
             res.status(200).json({ msg: "User is added successfully", chat: chat });
         } else {
-            return res.status(400).json({ msg: "You already exist in this group" });
+            console.log("hello world")
+            res.status(400).json({ msg: "You already exist in this group" });
         }
     }
 };
@@ -198,7 +199,7 @@ const removeFromChat = asyncHandler (async( req, res) => {
              }
          }
     )
-    res.status(200).json({msg:"User was removed from the gp successfully"}, { chat: chat })
+    res.status(200).json({msg:"User was removed successfullt", chat: chat })
 
 })
 

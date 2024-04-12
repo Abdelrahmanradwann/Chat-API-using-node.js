@@ -12,6 +12,8 @@ const validate = require("./Middleware/validates");
 const exp = require("constants");
 const jwt = require("jsonwebtoken");
 const { get } = require("http");
+const bodyParser = require('body-parser');
+
 
 mongoose.connect(process.env.URL).then(() => {
     console.log("connected to API database")
@@ -19,8 +21,10 @@ mongoose.connect(process.env.URL).then(() => {
 
 
 
-
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 app.use(express.json())
+
 
 app.use("/api/profilePic/uploadProfilePic", verify.verifyToken, validate.isPermittedPic, (req, res, next) => {
   res.setHeader("Content-Type", "image/jpeg") 

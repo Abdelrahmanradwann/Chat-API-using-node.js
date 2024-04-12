@@ -22,6 +22,10 @@ const sendMessage = ( async (req, res) => {
         if (content.length == 0) {
             return res.status(400).send("Message is required")
         }
+        const isMember = await checkChat.users.includes(curUserId);
+        if (!isMember) {
+            return res.status(400).json({msg:"You are not a member in this chat"})
+        }
         const message = new Message({
         sender: curUserId,
         content: content,
@@ -113,7 +117,7 @@ const readBy = asyncHandler(async (req, res) => {
     }
     let isExist = await Chat.findOne({ _id: chatId, users: { $in: curUserId } });
     if (isExist == null) {
-        return res.status(404).msg({ msg: "You 're not a member in this chat" });
+        return res.status(404).json({ msg: "You 're not a member in this chat" });
     }
     const message = await Message.findOne({ _id: messageId, chat: chatId }).populate({path:"readBy",select:"username email profilepic"});
     if (message == null) {

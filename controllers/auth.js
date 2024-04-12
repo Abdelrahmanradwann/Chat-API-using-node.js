@@ -74,9 +74,10 @@ const editProfile = asyncHandler(async (req, res) => {
     if (!username || !email || !password || !req.file) {
         return res.status(400).json({ msg: "Please fill all the required fields" });
     }
+    const hashedPassword = await bcrypt.hash(password, 10);
     let updatedUser = await User.findOneAndUpdate(
         { _id: req.current.id },
-        { username, email, password, avatar: req.file.filename },
+        { username, email, password:hashedPassword, avatar: req.file.filename },
         { new: true }
     ) 
     res.status(200).json({ msg: "User data updated successfully", user: updatedUser });
