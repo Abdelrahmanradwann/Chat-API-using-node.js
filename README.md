@@ -28,8 +28,8 @@ To get started with the Chat Application API, follow these steps:
 3. Create a `.env` file in the root directory of the project.
 4. Add the following environment variables to the `.env` file:
    - `PORT`: Port number for the server to listen on.
-   - `JWT_SECRET`: Secret key for JWT token generation.
-   - `DB_CONNECTION_STRING`: MongoDB connection string.
+   - `SECRET_KEY`: Secret key for JWT token generation.
+   - `URL`: MongoDB connection string.
 5. Ensure that the SMTP settings of your email account allow for third-party applications to send emails. In some cases, you may need to enable "less secure apps" or generate an app-specific password.
 6. If you're using a Gmail account to send emails, you may need to set up "two-step verification" for your Google account. This additional security step ensures that only authorized applications can access your Gmail account for sending emails.
 7. Start the server using `npm start`.
