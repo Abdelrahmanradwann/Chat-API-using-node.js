@@ -58,13 +58,13 @@ const signUp = asyncHandler(async (req, res, next) => {
 
     const token = await generate({ id: newUser._id, email: newUser.email });
     newUser.token = token;
-    await newUser.save()
     const check = await mail.confirmSignUp(email, username);
     if (check == "error") {
         const error = new Error("error in signing up");
         error.statusCode = 400;
         throw error;
     }
+    await newUser.save()
     res.status(200).send("User is added successfully")
 
 })
